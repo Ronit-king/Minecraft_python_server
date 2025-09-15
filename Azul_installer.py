@@ -226,6 +226,13 @@ def setup_java(java_major=21):
                 persist_env_posix(jdk_root)
                 java_bin = str(jdk_root / "bin" / "java")
             mode = "portable"
+
+            os.environ["JAVA_HOME"] = str(jdk_root)
+            os.environ["PATH"] = f"{jdk_root}/bin:" + os.environ["PATH"]
+
+            print("✅ JAVA_HOME set to:", os.environ["JAVA_HOME"])
+            print("✅ PATH updated for current session, checking Java version...\n")
+            subprocess.run([os.environ["JAVA_HOME"] + "/bin/java", "-version"])
     finally:
         shutil.rmtree(tmpdir, ignore_errors=True)
 
