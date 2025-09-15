@@ -50,7 +50,7 @@ def get_latest_zulu(java_major=21, os_name=None, arch=None):
         "release_status": "ga",
         "availability_types": "CA",
         "latest": "true",
-        "page_size": 5
+        "page_size": 20
     }
 
     url = f"{AZUL_METADATA_BASE}/zulu/packages/"
@@ -61,14 +61,28 @@ def get_latest_zulu(java_major=21, os_name=None, arch=None):
     if not data:
         raise ValueError("No matching Zulu JDK found.")
     
-    if os_name == "windows":
+    def pick(suffix):
         for pkg in data:
-            if pkg["name"].endswith(".msi"):
+            name = pkg["name"].lower()
+            if "-crac-" in name:
+                continue
+            if any(name.endswith(suf) for suf in suffix):
                 return pkg["download_url"], pkg["name"]
-        raise ValueError("No MSI package found for Windows.")
-    else:
-        pkg = data[0]
-        return pkg["download_url"], pkg["name"]
+        return None
+    
+    if os_name == "windows":
+
+        found = pick([".msi"]) or pick([".zip"])
+    
+    elif os_name == "macos":
+        found = pick([".tar.gz", ".tgz"]) or pick([".zip"])
+    else: # For Linux distros
+        found = pick([".tar.gz", ".tgz"]) or pick([".zip"])
+    
+    if not found:
+        raise ValueError("No suitable package found for the specified OS and architecture.")
+    return found
+
 
 def download_file(url,dest):
 
@@ -161,10 +175,6 @@ def setup_java(java_major=21):
         #  ============================= Turned off to test the new part=========================
         
         
-
-    finally:
-        shutil.rmtree(tmpdir, ignore_errors=True)
-
     # Verify installation
     # try:
     #     out = subprocess.run(["java", "-version"], capture_output=True, text=True)
