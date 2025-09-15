@@ -197,6 +197,19 @@ def setup_java(java_major=21):
     os_name, arch = normalize_os_arch()
     url, fname = get_latest_zulu(java_major, os_name, arch)
 
+    if os_name in ("linux", "macos"):
+        base = Path.home() / ".local" / "share" / "java"
+        if base.exists():
+            for child in base.iterdir():
+                if child.is_dir() and "zulu" in child.name.lower():
+                    ans = input(f"⚠️ Found existing Azul JDK at {child}. Do you want to uninstall it? (y/n): ").strip().lower()
+                    if ans == "y":
+                        uninstall_zulu_linux()
+                    else:
+                        print("Aborting installation.")
+                        return {"java_bin": None, "jdk_root": str(child), "mode": "skipped", "os": os_name, "arch": arch}
+                    break
+
     print(f"Found Azul JDK package: {fname}")
 
     tmpdir = tempfile.mkdtemp()
@@ -264,6 +277,44 @@ def setup_java(java_major=21):
     # except Exception as e:
     #     print("⚠️ Java installation failed:", e)
     return {"java_bin": java_bin, "jdk_root": str(jdk_root) if jdk_root else None, "mode": mode, "os": os_name, "arch": arch}
+
+
+# Uninstall existing Azul JDK installations (if any)
+def uninstall_zulu_linux():
+    base = Path.home() / ".local" / "share" / "java"
+    removed = False
+
+    if base.exists():
+        for child in base.iterdir():
+            if child.is_dir() and "zulu" in child.name.lower():
+                print(f"⚠️ Found an existing JDK at {child}, removing...")
+                shutil.rmtree(child, ignore_errors=True)
+                removed = True
+    candidates = [Path.home()/".bashrc", Path.home()/".profile"]
+    for target in candidates:
+        if target.exists():
+            text = target.read_text(encoding="utf-8")
+            if "# >>> zulu-jdk (managed) >>>" in text:
+                cleaned = []
+                skip = False
+                for line in text.splitlines():
+                    if line.strip() == "# >>> zulu-jdk (managed) >>>":
+                        skip = True
+                        continue
+                    if line.strip() == "# <<< zulu-jdk (managed) <<<":
+                        skip = False
+                        continue
+                    if not skip:
+                        cleaned.append(line)
+                target.write_text("\n".join(cleaned), encoding="utf-8")
+                print(f"🧹 Cleaned zulu-jdk block from {target}")
+    if removed:
+        print("✅ Existing Azul JDK installations removed.")
+    else:
+        print("ℹ️ No existing Azul JDK installations found.")
+
+def uninstall_zulu_macos():
+    pass
 
 if __name__ == "__main__":
     setup_java(java_major=21)
