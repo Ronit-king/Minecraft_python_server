@@ -14,4 +14,3 @@ fi
 
 echo
 echo "✅ Java is ready to use. Checking Java version..."
-java -version
