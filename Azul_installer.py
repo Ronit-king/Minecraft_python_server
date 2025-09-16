@@ -116,9 +116,9 @@ def choose_permanent_base(os_name: str) -> Path:
     if os_name == "macos":
         return Path("/Library/Java/JavaVirtualMachines") if _is_root_unix() else Path.home() / "Library" / "Java" / "JavaVirtualMachines"
     if os_name == "windows":
-        return Path(os.eniron.get("ProgramFiles", r"C:\Program Files")) / "Zulu"
+        return Path(os.environ.get("ProgramFiles", r"C:\Program Files")) / "Zulu"
     else:
-        return Path(os.eniron["LOCALAPPDATA"]) / "Programs" / "Zulu"
+        return Path(os.environ["LOCALAPPDATA"]) / "Programs" / "Zulu"
     
 def persist_env_windows_user(jdk_root: Path):
 
