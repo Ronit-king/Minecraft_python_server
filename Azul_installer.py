@@ -88,14 +88,14 @@ def get_latest_zulu(java_major=21, os_name=None, arch=None):
 
 def download_file(url,dest):
 
-    print (f"Downloading {url}...")
+    print (f"Downloading {url}...\n")
 
     with requests.get(url, stream=True) as r:
         r.raise_for_status()
         with open(dest, "wb") as f:
             for chunk in r.iter_content(chunk_size=8192):
                 f.write(chunk)
-    print (f"Saved: {dest}")
+    print (f"Saved: {dest}\n")
 
 def _is_admin_windows():
     try:
@@ -124,7 +124,7 @@ def persist_env_windows_user(jdk_root: Path):
 
     subprocess.run(["setx", "JAVA_HOME", str(jdk_root)], check=False, shell=True)
     subprocess.run(["setx", "PATH", f"%JAVA_HOME%\\bin;{os.environ.get('PATH','')}"], check=False, shell=True)
-    print("🔧 Set JAVA_HOME and updated PATH for the current user (new Terminal will pop up).")
+    print("🔧 Set JAVA_HOME and updated PATH for the current user (new Terminal will pop up).\n")
 
 
 def move_extracted_to_base(tmp_extract_dir: Path, base: Path) -> Path:
@@ -135,10 +135,10 @@ def move_extracted_to_base(tmp_extract_dir: Path, base: Path) -> Path:
     base.mkdir(parents=True, exist_ok=True)
     dest = base / src_root.name
     if dest.exists():
-        print(f"⚠️ Target directory {dest} already exists. Overwriting...")
+        print(f"⚠️ Target directory {dest} already exists. Overwriting...\n")
         return dest
     shutil.move(str(src_root), str(dest))
-    print(f"✅ Moved JDK to: {dest}")
+    print(f"✅ Moved JDK to: {dest}\n")
     return dest
 
 def persist_env_posix(jdk_root: Path):
@@ -159,7 +159,7 @@ def persist_env_posix(jdk_root: Path):
         target.parent.mkdir(parents=True, exist_ok=True)
         with target.open("a", encoding="utf-8") as f:
             f.write(block)
-        print(f"🔧 Added JAVA_HOME/PATH to {target}. Run:  source {target}")
+        print(f"🔧 Added JAVA_HOME/PATH to {target}. Run:  source {target}\n")
 
     
 def extract_archive(archive_path, extract_to):
@@ -171,7 +171,7 @@ def extract_archive(archive_path, extract_to):
             t.extractall(extract_to)
     else:
         raise ValueError("Unsupported archive format.")
-    print(f"Extracted to: {extract_to}")
+    print(f"Extracted to: {extract_to}\n")
 
 def ensure_java_installed():
     try:
@@ -181,17 +181,17 @@ def ensure_java_installed():
         return False
 
 def install_zulu_msi(msi_path):
-    print ("Running MSI installer (requires Administrator access)...")
+    print ("Running MSI installer (requires Administrator access)...\n")
     subprocess.run([
         "msiexec", "/i", msi_path,
         "/qn",
         "ADDLOCAL=FeatureJavaHome,FeatureEnvironment"
     ], check=True)
-    print("✅ Azul JDK installed via MSI.")
+    print("✅ Azul JDK installed via MSI.\n")
 
 def setup_java(java_major=21):
     if ensure_java_installed():
-        print("✅ Java is already installed.")
+        print("✅ Java is already installed.\n")
         return {"java_bin": "java", "jdk_root": None, "mode": "existing"}
         
     os_name, arch = normalize_os_arch()
@@ -206,11 +206,11 @@ def setup_java(java_major=21):
                     if ans == "y":
                         uninstall_zulu_linux()
                     else:
-                        print("Aborting installation.")
+                        print("Aborting installation.\n")
                         return {"java_bin": None, "jdk_root": str(child), "mode": "skipped", "os": os_name, "arch": arch}
                     break
 
-    print(f"Found Azul JDK package: {fname}")
+    print(f"Found Azul JDK package: {fname}\n")
 
     tmpdir = tempfile.mkdtemp()
     try:
@@ -243,39 +243,12 @@ def setup_java(java_major=21):
             os.environ["JAVA_HOME"] = str(jdk_root)
             os.environ["PATH"] = f"{jdk_root}/bin:" + os.environ["PATH"]
 
+            # Verify installation
             print("✅ JAVA_HOME set to:", os.environ["JAVA_HOME"])
-            print("✅ PATH updated for current session, checking Java version...\n")
+            print("\n✅ PATH updated for current session, checking Java version...\n")
             subprocess.run([os.environ["JAVA_HOME"] + "/bin/java", "-version"])
     finally:
         shutil.rmtree(tmpdir, ignore_errors=True)
-
-    # Verify installation
-    try:
-        out = subprocess.run([java_bin, "-version"], capture_output=True, text=True)
-        print("Java version:\n", out.stderr.strip() or out.stdout.strip())
-    except Exception as e:
-        print("⚠️ Java check failed:", e)
-
-        
-
-        # ============================= Turned off to test the new part=========================
-        # if os_name in ("linux", "macos"):
-        #     extract_archive(file_path, install_dir)
-        # elif os_name == "windows":
-        #     extract_archive(file_path, install_dir)
-        # else:
-        #     raise ValueError(f"Unsupported OS for extraction: {os_name}")
-        # print(f"✅ Azul JDK installed at:", install_dir)
-        #  ============================= Turned off to test the new part=========================
-        
-        
-    # Verify installation
-    # try:
-    #     out = subprocess.run(["java", "-version"], capture_output=True, text=True)
-    #     print("Java version: \n", out.stderr.strip())
-
-    # except Exception as e:
-    #     print("⚠️ Java installation failed:", e)
     return {"java_bin": java_bin, "jdk_root": str(jdk_root) if jdk_root else None, "mode": mode, "os": os_name, "arch": arch}
 
 
@@ -287,7 +260,7 @@ def uninstall_zulu_linux():
     if base.exists():
         for child in base.iterdir():
             if child.is_dir() and "zulu" in child.name.lower():
-                print(f"⚠️ Found an existing JDK at {child}, removing...")
+                print(f"⚠️ Found an existing JDK at {child}, removing...\n")
                 shutil.rmtree(child, ignore_errors=True)
                 removed = True
     candidates = [Path.home()/".bashrc", Path.home()/".profile"]
@@ -307,9 +280,9 @@ def uninstall_zulu_linux():
                     if not skip:
                         cleaned.append(line)
                 target.write_text("\n".join(cleaned), encoding="utf-8")
-                print(f"🧹 Cleaned zulu-jdk block from {target}")
+                print(f"🧹 Cleaned zulu-jdk block from {target}\n")
     if removed:
-        print("✅ Existing Azul JDK installations removed.")
+        print("✅ Existing Azul JDK installations removed.\n")
     else:
         print("ℹ️ No existing Azul JDK installations found.")
 
